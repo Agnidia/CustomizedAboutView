@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Provides the standard about-screen presentation.
 @MainActor
 public struct CustomizedAboutDefaultContent<Icon: View, AppCard: View, Footer: View>: View {
     private let context: CustomizedAboutContext
@@ -62,16 +63,24 @@ public struct CustomizedAboutDefaultContent<Icon: View, AppCard: View, Footer: V
                     applicationsSection
                 }
 
-                if let support = context.configuration.supportWebsite {
-                    Link(strings.support, destination: support)
+                if context.configuration.supportWebsite != nil
+                    || context.configuration.contactWebsite != nil
+                {
+                    HStack(spacing: 16) {
+                        if let support = context.configuration.supportWebsite {
+                            Link(strings.support, destination: support)
+                        }
+                        if let contact = context.configuration.contactWebsite {
+                            Link(strings.contact, destination: contact)
+                        }
+                    }
                 }
 
                 footer()
             }
             .padding()
-            .frame(maxWidth: 440)
-            .frame(maxWidth: .infinity)
         }
+        .customizedAboutContentSize()
     }
 
     private var versionDescription: String {
@@ -86,14 +95,13 @@ public struct CustomizedAboutDefaultContent<Icon: View, AppCard: View, Footer: V
             switch context.appsState {
             case .idle, .loading:
                 ProgressView(strings.loadingApps)
-                    .frame(maxWidth: .infinity, minHeight: 92)
+                    .frame(minHeight: 92)
             case let .loaded(applications):
                 if applications.isEmpty {
                     unavailableContent
                 } else {
                     CustomizedAboutAppsGrid(
                         applications: applications,
-                        layout: context.configuration.appsLayout,
                         content: appCard
                     )
                 }
@@ -101,7 +109,6 @@ public struct CustomizedAboutDefaultContent<Icon: View, AppCard: View, Footer: V
                 unavailableContent
             }
         }
-        .frame(maxWidth: .infinity)
     }
 
     private var unavailableContent: some View {
@@ -111,40 +118,111 @@ public struct CustomizedAboutDefaultContent<Icon: View, AppCard: View, Footer: V
                 .multilineTextAlignment(.center)
             Button(strings.retry, action: context.reload)
         }
-        .frame(maxWidth: .infinity, minHeight: 92)
+        .frame(minHeight: 92)
     }
 }
 
+private extension View {
+    @ViewBuilder
+    func customizedAboutContentSize() -> some View {
+        #if os(macOS)
+            frame(minWidth: 220, minHeight: 330)
+                .fixedSize(horizontal: true, vertical: true)
+        #else
+            self
+        #endif
+    }
+}
+
+/// Arranges up to six application cards into centered automatic rows.
 @MainActor
 public struct CustomizedAboutAppsGrid<Content: View>: View {
     private let applications: [AppStoreApplication]
-    private let layout: CustomizedAboutAppsLayout
     private let content: (AppStoreApplication) -> Content
 
     public init(
         applications: [AppStoreApplication],
-        layout: CustomizedAboutAppsLayout,
         @ViewBuilder content: @escaping (AppStoreApplication) -> Content
     ) {
         self.applications = applications
-        self.layout = layout
         self.content = content
     }
 
     public var body: some View {
-        VStack(spacing: 8) {
-            ForEach(Array(layout.groups(for: applications).enumerated()), id: \.offset) { _, row in
-                HStack(spacing: 8) {
-                    ForEach(row) { application in
-                        content(application)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
+        let rowCounts = CustomizedAboutAppsLayout.automatic.groups(for: applications).map(\.count)
+
+        CenteredRowsLayout(
+            rowCounts: rowCounts,
+            cellSize: CGSize(width: 128, height: 92),
+            spacing: 8
+        ) {
+            ForEach(applications) { application in
+                content(application)
+                    .frame(width: 128, height: 92)
             }
         }
     }
 }
 
+private struct CenteredRowsLayout: Layout {
+    let rowCounts: [Int]
+    let cellSize: CGSize
+    let spacing: CGFloat
+
+    func sizeThatFits(
+        proposal _: ProposedViewSize,
+        subviews _: Subviews,
+        cache _: inout ()
+    ) -> CGSize {
+        guard let maximumColumns = rowCounts.max(), maximumColumns > .zero else {
+            return .zero
+        }
+
+        return CGSize(
+            width: cellSize.width * CGFloat(maximumColumns)
+                + spacing * CGFloat(maximumColumns - 1),
+            height: cellSize.height * CGFloat(rowCounts.count)
+                + spacing * CGFloat(max(.zero, rowCounts.count - 1))
+        )
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal _: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) {
+        guard !rowCounts.isEmpty else {
+            return
+        }
+
+        var subviewIndex: Int = .zero
+        var y = bounds.minY
+
+        for columnCount in rowCounts {
+            let rowWidth = cellSize.width * CGFloat(columnCount)
+                + spacing * CGFloat(max(.zero, columnCount - 1))
+            var x = bounds.midX - rowWidth / 2
+
+            for _ in .zero ..< columnCount where subviewIndex < subviews.count {
+                subviews[subviewIndex].place(
+                    at: CGPoint(x: x, y: y),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(
+                        width: cellSize.width,
+                        height: cellSize.height
+                    )
+                )
+                x += cellSize.width + spacing
+                subviewIndex += 1
+            }
+
+            y += cellSize.height + spacing
+        }
+    }
+}
+
+/// Presents one application as a fixed-size App Store link.
 @MainActor
 public struct CustomizedAboutAppCard: View {
     private let application: AppStoreApplication
@@ -178,8 +256,7 @@ public struct CustomizedAboutAppCard: View {
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 4)
             }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 92)
+            .frame(width: 128, height: 92)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
@@ -187,4 +264,69 @@ public struct CustomizedAboutAppCard: View {
             String(format: strings.appStoreAccessibilityFormat, application.name)
         )
     }
+}
+
+private struct ApplicationsLayoutPreview: View {
+    let applicationCount: Int
+
+    private var applications: [AppStoreApplication] {
+        (1 ... applicationCount).map { index in
+            AppStoreApplication(
+                id: index,
+                name: "Application \(index)",
+                storeURL: URL(fileURLWithPath: "/applications/\(index)")
+            )
+        }
+    }
+
+    var body: some View {
+        CustomizedAboutDefaultContent(
+            context: CustomizedAboutContext(
+                configuration: CustomizedAboutConfiguration(
+                    metadata: CustomizedAboutMetadata(
+                        name: "Example",
+                        version: "1.0.0",
+                        build: "100",
+                        copyright: "© 2026 Company"
+                    ),
+                    appStoreIDs: applications.map(\.id),
+                    developerWebsite: URL(string: "https://example.com"),
+                    supportWebsite: URL(string: "https://example.com/support"),
+                    contactWebsite: URL(string: "https://example.com/contact")
+                ),
+                appsState: .loaded(applications),
+                reload: {}
+            ),
+            strings: .localized(for: Locale(identifier: "en"))
+        ) {
+            Image(systemName: "info.circle.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+        }
+    }
+}
+
+#Preview("1 App") {
+    ApplicationsLayoutPreview(applicationCount: 1)
+}
+
+#Preview("2 Apps") {
+    ApplicationsLayoutPreview(applicationCount: 2)
+}
+
+#Preview("3 Apps") {
+    ApplicationsLayoutPreview(applicationCount: 3)
+}
+
+#Preview("4 Apps — 2 × 2") {
+    ApplicationsLayoutPreview(applicationCount: 4)
+}
+
+#Preview("5 Apps — 3 + 2") {
+    ApplicationsLayoutPreview(applicationCount: 5)
+}
+
+#Preview("6 Apps — 3 + 3") {
+    ApplicationsLayoutPreview(applicationCount: 6)
 }

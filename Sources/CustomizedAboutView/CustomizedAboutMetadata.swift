@@ -1,5 +1,6 @@
 import Foundation
 
+/// Describes the application identity displayed by the about view.
 public struct CustomizedAboutMetadata: Hashable, Sendable {
     public let name: String
     public let version: String
