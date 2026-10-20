@@ -4,20 +4,19 @@ import Testing
 
 @Suite("CustomizedAboutView")
 struct CustomizedAboutViewTests {
-    @Test("Layout presets create the requested rows")
-    func layoutPresets() {
-        #expect(CustomizedAboutAppsLayout.oneByOne.rows == [1])
-        #expect(CustomizedAboutAppsLayout.oneByTwo.rows == [2])
-        #expect(CustomizedAboutAppsLayout.oneByThree.rows == [3])
-        #expect(CustomizedAboutAppsLayout.oneByThreePlusTwoByOne.rows == [3, 1, 1])
-        #expect(CustomizedAboutAppsLayout.oneByThreePlusTwoByTwo.rows == [3, 2, 2])
-        #expect(CustomizedAboutAppsLayout.oneByThreePlusTwoByThree.rows == [3, 3, 3])
-    }
+    @Test("The automatic layout uses at most two rows", arguments: [
+        (1, [[1]]),
+        (2, [[1, 2]]),
+        (3, [[1, 2, 3]]),
+        (4, [[1, 2], [3, 4]]),
+        (5, [[1, 2, 3], [4, 5]]),
+        (6, [[1, 2, 3], [4, 5, 6]]),
+    ])
+    func automaticLayout(argument: (Int, [[Int]])) {
+        let (applicationCount, expectedGroups) = argument
+        let applications = Array(1 ... applicationCount)
 
-    @Test("The final row pattern repeats for overflow")
-    func layoutOverflow() {
-        let groups = CustomizedAboutAppsLayout(rows: [3, 2]).groups(for: Array(1 ... 9))
-        #expect(groups == [[1, 2, 3], [4, 5], [6, 7], [8, 9]])
+        #expect(CustomizedAboutAppsLayout.automatic.groups(for: applications) == expectedGroups)
     }
 
     @Test("The lookup client supports dependency injection")

@@ -1,5 +1,6 @@
 import Foundation
 
+/// App Store metadata used by an application card.
 public struct AppStoreApplication: Identifiable, Hashable, Sendable {
     public let id: Int
     public let name: String
@@ -14,6 +15,7 @@ public struct AppStoreApplication: Identifiable, Hashable, Sendable {
     }
 }
 
+/// Loads application metadata for App Store identifiers.
 public struct AppStoreLookupClient: Sendable {
     private let lookupOperation: @Sendable ([Int], String?) async throws -> [AppStoreApplication]
 
@@ -61,6 +63,7 @@ public struct AppStoreLookupClient: Sendable {
     }
 }
 
+/// Errors produced before the App Store response can be decoded.
 public enum AppStoreLookupError: Error, Equatable, Sendable {
     case invalidRequest
     case unsuccessfulResponse

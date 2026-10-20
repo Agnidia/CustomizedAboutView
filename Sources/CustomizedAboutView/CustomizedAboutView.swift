@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Represents the current App Store loading state.
 public enum CustomizedAboutAppsState: Equatable, Sendable {
     case idle
     case loading
@@ -7,6 +8,7 @@ public enum CustomizedAboutAppsState: Equatable, Sendable {
     case failed
 }
 
+/// Supplies configuration, loading state, and retry behavior to custom content.
 @MainActor
 public struct CustomizedAboutContext {
     public let configuration: CustomizedAboutConfiguration
@@ -14,6 +16,7 @@ public struct CustomizedAboutContext {
     public let reload: () -> Void
 }
 
+/// Loads application metadata and presents an adaptable SwiftUI about screen.
 @MainActor
 public struct CustomizedAboutView: View {
     private let configuration: CustomizedAboutConfiguration

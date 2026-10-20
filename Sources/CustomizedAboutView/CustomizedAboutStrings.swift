@@ -1,5 +1,6 @@
 import Foundation
 
+/// Contains every user-facing string used by the default content.
 public struct CustomizedAboutStrings: Hashable, Sendable {
     public var version: String
     public var developerWebsite: String
@@ -8,6 +9,7 @@ public struct CustomizedAboutStrings: Hashable, Sendable {
     public var appsUnavailable: String
     public var retry: String
     public var support: String
+    public var contact: String
     public var appStoreAccessibilityFormat: String
 
     public init(
@@ -18,6 +20,7 @@ public struct CustomizedAboutStrings: Hashable, Sendable {
         appsUnavailable: String,
         retry: String,
         support: String,
+        contact: String = "Contact",
         appStoreAccessibilityFormat: String
     ) {
         self.version = version
@@ -27,6 +30,7 @@ public struct CustomizedAboutStrings: Hashable, Sendable {
         self.appsUnavailable = appsUnavailable
         self.retry = retry
         self.support = support
+        self.contact = contact
         self.appStoreAccessibilityFormat = appStoreAccessibilityFormat
     }
 
@@ -43,6 +47,7 @@ public struct CustomizedAboutStrings: Hashable, Sendable {
             ),
             retry: bundle.text("about.retry", fallback: "Retry"),
             support: bundle.text("about.support", fallback: "Support"),
+            contact: bundle.text("about.contact", fallback: "Contact"),
             appStoreAccessibilityFormat: bundle.text(
                 "about.app_store_accessibility",
                 fallback: "View %@ on the App Store"

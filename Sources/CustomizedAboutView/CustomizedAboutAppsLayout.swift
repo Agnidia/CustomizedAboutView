@@ -1,26 +1,15 @@
 import Foundation
 
-public struct CustomizedAboutAppsLayout: Hashable, Sendable {
-    public static let oneByOne = Self(rows: [1])
-    public static let oneByTwo = Self(rows: [2])
-    public static let oneByThree = Self(rows: [3])
-    public static let oneByThreePlusTwoByOne = Self(rows: [3, 1, 1])
-    public static let oneByThreePlusTwoByTwo = Self(rows: [3, 2, 2])
-    public static let oneByThreePlusTwoByThree = Self(rows: [3, 3, 3])
+enum CustomizedAboutAppsLayout: Hashable, Sendable {
+    case automatic
 
-    public let rows: [Int]
-
-    public init(rows: [Int]) {
-        let validRows = rows.filter { $0 > 0 }
-        self.rows = validRows.isEmpty ? [1] : validRows
-    }
-
-    public func groups<Element>(for elements: [Element]) -> [[Element]] {
+    func groups<Element>(for elements: [Element]) -> [[Element]] {
         guard !elements.isEmpty else { return [] }
 
         var groups: [[Element]] = []
-        var startIndex = 0
-        var rowIndex = 0
+        var startIndex: Int = .zero
+        var rowIndex: Int = .zero
+        let rows = automaticRows(for: elements.count)
 
         while startIndex < elements.count {
             let columnCount = rows[min(rowIndex, rows.count - 1)]
@@ -31,5 +20,13 @@ public struct CustomizedAboutAppsLayout: Hashable, Sendable {
         }
 
         return groups
+    }
+
+    private func automaticRows(for elementCount: Int) -> [Int] {
+        switch elementCount {
+        case 1 ... 3: [elementCount]
+        case 4: [2, 2]
+        default: [3, 3]
+        }
     }
 }
