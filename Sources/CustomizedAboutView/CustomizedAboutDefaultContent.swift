@@ -228,6 +228,9 @@ public struct CustomizedAboutAppCard: View {
     private let application: AppStoreApplication
     private let strings: CustomizedAboutStrings
 
+    @State private var isHovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(application: AppStoreApplication, strings: CustomizedAboutStrings) {
         self.application = application
         self.strings = strings
@@ -258,8 +261,14 @@ public struct CustomizedAboutAppCard: View {
             }
             .frame(width: 128, height: 92)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+            .scaleEffect(isHovering && !reduceMotion ? 1.06 : 1)
+            .animation(.spring(duration: 0.25, bounce: 0.3), value: isHovering)
         }
         .buttonStyle(.plain)
+        #if !os(tvOS) && !os(watchOS)
+        .onHover { isHovering = $0 }
+        #endif
+        .zIndex(isHovering ? 1 : 0)
         .accessibilityLabel(
             String(format: strings.appStoreAccessibilityFormat, application.name)
         )
